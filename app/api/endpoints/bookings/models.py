@@ -13,5 +13,3 @@ class Bookings(Base):
     date_from = Column(Date)
     date_to = Column(Date)
 
-    users = relationship("Users", back_populates="...")
-    rooms = relationship("Rooms", back_populates="...")

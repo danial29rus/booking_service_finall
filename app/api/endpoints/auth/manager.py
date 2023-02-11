@@ -1,19 +1,18 @@
-from typing import Optional
+from typing import Optional, Dict, Any, Coroutine
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin, exceptions, models, schemas
 
-from app.api.api import Users
-from app.api.api import get_user_db
-
+from app.api.endpoints.auth.models import User
+from app.api.endpoints.auth.utils import get_user_db
 from app.config import SECRET_AUTH
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[Users, int]):
+class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     reset_password_token_secret = SECRET_AUTH
     verification_token_secret = SECRET_AUTH
 
-    async def on_after_register(self, user: Users, request: Optional[Request] = None):
+    async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
     async def create(
@@ -21,7 +20,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[Users, int]):
         user_create: schemas.UC,
         safe: bool = False,
         request: Optional[Request] = None,
-    ) -> models.UP:
+    ) -> Coroutine[Any, Any, Coroutine[Any, Any, None]]:
         await self.validate_password(user_create.password, user_create)
 
         existing_user = await self.user_db.get_by_email(user_create.email)
@@ -36,10 +35,10 @@ class UserManager(IntegerIDMixin, BaseUserManager[Users, int]):
         password = user_dict.pop("password")
         user_dict["hashed_password"] = self.password_helper.hash(password)
 
+
         created_user = await self.user_db.create(user_dict)
 
         await self.on_after_register(created_user, request)
-
         return created_user
 
 

@@ -4,7 +4,6 @@ from datetime import datetime
 
 class Book(BaseModel):
     room_id: int
-    user_id: int
     date_from: datetime
     date_to: datetime
 

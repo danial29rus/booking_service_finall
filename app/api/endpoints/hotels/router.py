@@ -16,7 +16,8 @@ async def get_hotel_locations(location_hotel: str, session: AsyncSession = Depen
         query = select(Hotels).where(Hotels.location.contains(location_hotel.title()))
         result = await session.execute(query)
         return result.all()
-    except:
+    except Exception as e:
+        print(e)
         return {
             'status': 'error',
             'data': None,

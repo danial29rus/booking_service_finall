@@ -1,18 +1,24 @@
 from typing import Optional
 
 from fastapi_users import schemas
-from pydantic import BaseModel
 
 
-class NewUser(BaseModel):
+class UserRead(schemas.BaseUser):
+    id: int
+    email: str
     username: str
-    hashed_password: str
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
+
+    class Config:
+        orm_mode = True
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
+class UserCreate(schemas.BaseUserCreate):
+    username: str
+    email: str
+    password: str
+    is_active: Optional[bool] = True
+    is_superuser: Optional[bool] = False
+    is_verified: Optional[bool] = False

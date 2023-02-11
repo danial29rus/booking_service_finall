@@ -5,7 +5,11 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from app.api.endpoints.hotels import models
+from app.api.endpoints.bookings import models
+from app.api.endpoints.auth import models
 from app.database import Base
+from app.database import metadata
 
 from app.config import DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASS
 
