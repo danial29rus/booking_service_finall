@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 import os
 
+from pydantic import BaseModel
+
+
 load_dotenv()
 
 DB_HOST = os.environ.get("DB_HOST")
@@ -10,7 +13,7 @@ DB_USER = os.environ.get("DB_USER")
 DB_PASS = os.environ.get("DB_PASS")
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-
+SMTP_TO_USER = os.environ.get("SMTP_TO_USER")
 
 DB_HOST_TEST = os.environ.get("DB_HOST_TEST")
 DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
@@ -19,3 +22,27 @@ DB_USER_TEST = os.environ.get("DB_USER_TEST")
 DB_PASS_TEST = os.environ.get("DB_PASS_TEST")
 
 SECRET_AUTH = os.environ.get("SECRET_AUTH")
+
+
+log_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(levelprefix)s %(asctime)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+    },
+    "loggers": {
+        "foo-logger": {"handlers": ["default"], "level": "DEBUG"},
+    },
+}

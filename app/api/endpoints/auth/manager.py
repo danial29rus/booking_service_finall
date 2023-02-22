@@ -1,46 +1,116 @@
-from typing import Optional, Dict, Any, Coroutine
+from datetime import timedelta, timezone
 
 from fastapi import Depends, Request
-from fastapi_users import BaseUserManager, IntegerIDMixin, exceptions, models, schemas
+from fastapi.responses import RedirectResponse
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from typing import Union
+from fastapi import status, HTTPException, Form
+from pydantic import BaseModel
+from datetime import datetime
+from sqlalchemy.sql import select
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.endpoints.auth.models import User
-from app.api.endpoints.auth.utils import get_user_db
-from app.config import SECRET_AUTH
+from app.api.endpoints.auth.models import Users
+from app.database import async_session_maker, get_async_session
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
-    reset_password_token_secret = SECRET_AUTH
-    verification_token_secret = SECRET_AUTH
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
-    async def on_after_register(self, user: User, request: Optional[Request] = None):
-        print(f"User {user.id} has registered.")
 
-    async def create(
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+class PasswordRequestForm:
+    def __init__(
         self,
-        user_create: schemas.UC,
-        safe: bool = False,
-        request: Optional[Request] = None,
-    ) -> Coroutine[Any, Any, Coroutine[Any, Any, None]]:
-        await self.validate_password(user_create.password, user_create)
-
-        existing_user = await self.user_db.get_by_email(user_create.email)
-        if existing_user is not None:
-            raise exceptions.UserAlreadyExists()
-
-        user_dict = (
-            user_create.create_update_dict()
-            if safe
-            else user_create.create_update_dict_superuser()
-        )
-        password = user_dict.pop("password")
-        user_dict["hashed_password"] = self.password_helper.hash(password)
+        email: str = Form(),
+        password: str = Form(),
+    ):
+        self.email = email
+        self.password = password
 
 
-        created_user = await self.user_db.create(user_dict)
-
-        await self.on_after_register(created_user, request)
-        return created_user
 
 
-async def get_user_manager(user_db=Depends(get_user_db)):
-    yield UserManager(user_db)
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: Union[str, None] = None
+
+
+async def get_user(email: str):
+    try:
+        async with async_session_maker() as session:
+            query = select(Users)\
+                .filter_by(email=email)
+            result = await session.execute(query)
+            user_model = result.scalar_one()
+            return user_model
+    except NoResultFound:
+        return None
+
+
+async def authenticate_user(email: str, password: str):
+    user = await get_user(email)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
+def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+
+
+
+HTTP_EXCEPTION_REDIRECT_TO_LOGIN = HTTPException(
+    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+    headers={'Location': '/pages/login'}
+)
+
+def custom_oauth2_frontend(request: Request):
+    token = request.cookies.get("booking_access_token")
+    if not token:
+        raise HTTP_EXCEPTION_REDIRECT_TO_LOGIN
+
+    return token
+
+
+async def get_current_user_frontend(request: Request, token: str = Depends(custom_oauth2_frontend)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        expire: str = payload.get("exp")
+        if int(expire) - datetime.now(timezone.utc).timestamp() < 0:
+            raise HTTP_EXCEPTION_REDIRECT_TO_LOGIN
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTP_EXCEPTION_REDIRECT_TO_LOGIN
+        token_data = TokenData(email=email)
+    except JWTError:
+        raise HTTP_EXCEPTION_REDIRECT_TO_LOGIN
+    user = await get_user(token_data.email)
+    if user is None:
+        raise HTTP_EXCEPTION_REDIRECT_TO_LOGIN
+    return user
