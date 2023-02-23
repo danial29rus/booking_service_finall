@@ -1,10 +1,53 @@
 version: "3.9"
 services:
-  postgres:
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+
+  main_db:
     image: postgres:13.3
     environment:
-      POSTGRES_DB: "booking_db"
+      POSTGRES_DB: "postgres"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
     ports:
-      - "6666:5432"
+      - "7778:5432"
+
+  test_db:
+      image: postgres:13.3
+      environment:
+        POSTGRES_DB: "postgres"
+        POSTGRES_USER: "postgres1"
+        POSTGRES_PASSWORD: "postgres"
+      ports:
+        - "6001:5432"
+
+  redis:
+    image: "redis:5.0.6"
+    container_name: my-test-redis
+    ports:
+     - "6379:6379"
+
+  celery:
+    image: celery:latest-local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - web
+    volumes:
+      - ./app:/app
+
+  flower:
+      image: flower:latest-local
+      build:
+        context: .
+        dockerfile: Dockerfile
+      volumes:
+        - ./app:/app
+      ports:
+        - "5555:5555"
