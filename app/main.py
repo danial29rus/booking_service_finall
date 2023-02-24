@@ -20,7 +20,7 @@ dictConfig(log_config)
 
 
 app = FastAPI(
-    title="Trading App"
+    title="Booking Service"
 )
 app.mount("/static", StaticFiles(directory="app/api/endpoints/static"), name="static")
 

@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from app.api.endpoints.auth.utils import get_current_user
@@ -21,6 +22,3 @@ def get_dashboard_report(background_tasks: BackgroundTasks, user=Depends(get_cur
         "data": "Письмо отправлено",
         "details": None
     }
-
-
-

@@ -1,3 +1,5 @@
+
+
 import ssl
 
 from celery import Celery
@@ -14,19 +16,19 @@ SMTP_PORT = 465
 celery = Celery('tasks', broker='redis://localhost:6379')
 
 
-def get_email_template_dashboard(email_to: str):
+def get_email_template_dashboard(email_to: str, dateto, datofrom, hotelname, totalcost):
     email = EmailMessage()
-    email['Subject'] = 'Натрейдил Отчет Дашборд'
+    email['Subject'] = 'Booking Hotel'
     email['From'] = SMTP_USER
     email['To'] = email_to
 
-    email.set_content(f"Здравствуйте, {email_to}, вы забронировали отель !")
+    email.set_content(f"""Вы {email_to} забронировали номер в отеле {hotelname}. Период: с {datofrom} по {dateto}. К оплате {totalcost} RUB. """)
     return email
 
 
 @celery.task
-def send_email_report_dashboard(email_to: str):
-    email = get_email_template_dashboard(email_to)
+def send_email_report_dashboard(email_to: str, dateto, datofrom, hotelname, totalcost):
+    email = get_email_template_dashboard(email_to, dateto, datofrom, hotelname, totalcost)
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(email)
