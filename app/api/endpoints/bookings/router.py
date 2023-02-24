@@ -21,7 +21,7 @@ from app.api.endpoints.bookings.models import Bookings
 from app.api.endpoints.bookings.schemas import BookingInfo, Remove_book, Booking_room
 from app.api.endpoints.hotels.models import Rooms, Hotels
 from app.config import SMTP_PASSWORD, SMTP_USER
-# from app.api.endpoints.tasks.tasks import send_email_report_dashboard
+from app.api.endpoints.tasks.tasks import send_email_report_dashboard
 
 router_booking = APIRouter()
 

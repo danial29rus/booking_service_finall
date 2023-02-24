@@ -1,13 +1,5 @@
 version: "3.9"
 services:
-  web:
-    build: .
-    command: uvicorn app.main:app --host 0.0.0.0
-    volumes:
-      - .:/app
-    ports:
-      - 8000:8000
-
   main_db:
     image: postgres:13.3
     environment:
@@ -16,38 +8,68 @@ services:
       POSTGRES_PASSWORD: "postgres"
     ports:
       - "7778:5432"
-
-  test_db:
-      image: postgres:13.3
-      environment:
-        POSTGRES_DB: "postgres"
-        POSTGRES_USER: "postgres1"
-        POSTGRES_PASSWORD: "postgres"
-      ports:
-        - "6001:5432"
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
 
   redis:
-    image: "redis:5.0.6"
-    container_name: my-test-redis
+    image: redis:7
+    container_name: booking_redis1
+    restart: unless-stopped
     ports:
-     - "6379:6379"
-
-  celery:
-    image: celery:latest-local
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - web
+      - "6379:6379"
     volumes:
-      - ./app:/app
+      - redis_data:/data
 
-  flower:
-      image: flower:latest-local
+  booking:
       build:
         context: .
-        dockerfile: Dockerfile
-      volumes:
-        - ./app:/app
+      command: "uvicorn app.main:app --reload"
+      container_name: booking_app
       ports:
-        - "5555:5555"
+        - "8000:8000"
+      depends_on:
+        - main_db
+
+  celery:
+      build:
+        context: .
+      container_name: booking_celery
+      command: [ "/booking_service/docker/docker-bootstrap.sh", "celery" ]
+      depends_on:
+        - redis
+
+  flower:
+      build:
+        context: .
+      container_name: booking_flower
+      command: [ "/booking_service/docker/docker-bootstrap.sh", "flower" ]
+      depends_on:
+        - redis
+
+volumes:
+  postgres_data:
+      external: false
+  redis_data:
+      external: false
+
+#  celery_worker:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    command: celery -A app.api.endpoints.tasks.tasks worker --loglevel=INFO
+#
+#
+#    depends_on:
+#      - redis
+#
+#    stdin_open: true
+
+#  flower:
+#      image: flower:latest-local
+#      volumes:
+#        - ./app:/app
+#      ports:
+#        - "5556:5555"
+#      depends_on:
+#        - redis
+#        - celery

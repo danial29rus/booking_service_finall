@@ -17,6 +17,8 @@ from app.config import log_config
 
 dictConfig(log_config)
 
+
+
 app = FastAPI(
     title="Trading App"
 )
