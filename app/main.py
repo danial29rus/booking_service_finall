@@ -12,6 +12,7 @@ from app.api.endpoints.bookings.router import router_booking
 from app.api.endpoints.pages.router import router as router_pages
 from logging.config import dictConfig
 from fastapi import FastAPI
+from app.config import REDIS_HOST, REDIS_PORT
 
 from app.config import log_config
 
@@ -34,5 +35,5 @@ app.include_router(router_pages)
 
 @app.on_event("startup")
 async def startup_event():
-    redis = aioredis.from_url("redis://localhost", encoding="utf8", decode_responses=True)
+    redis = aioredis.from_url(f"redis://{REDIS_HOST}", encoding="utf8", decode_responses=True)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")

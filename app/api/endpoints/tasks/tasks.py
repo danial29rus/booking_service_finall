@@ -8,12 +8,12 @@ from email.message import EmailMessage
 
 from fastapi import Depends
 from app.api.endpoints.auth.utils import get_current_user
-from app.config import SMTP_PASSWORD, SMTP_USER, SMTP_TO_USER
+from app.config import SMTP_PASSWORD, SMTP_USER, SMTP_TO_USER,REDIS_PORT,REDIS_HOST
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
 
-celery = Celery('tasks', broker='redis://localhost:6379')
+celery = Celery('tasks', broker=f'redis://{REDIS_HOST}:6379')
 
 
 def get_email_template_dashboard(email_to: str, dateto, datofrom, hotelname, totalcost):

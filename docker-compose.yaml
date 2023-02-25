@@ -1,56 +1,118 @@
 version: "3.9"
 services:
-  main_db:
+  db:
     image: postgres:13.3
+    container_name: booking_db1
+    restart: always
     environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
-      - "7778:5432"
+      - 5432:5432
     volumes:
-      - "postgres_data:/var/lib/postgresql/data"
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
     container_name: booking_redis1
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - 6379:6379
     volumes:
       - redis_data:/data
 
   booking:
-      build:
-        context: .
-      command: "uvicorn app.main:app --reload"
-      container_name: booking_app
-      ports:
-        - "8000:8000"
-      depends_on:
-        - main_db
+    env_file: .env
+    build:
+      context: .
+    command: bash -c "alembic upgrade fe06c327c5a1 && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    container_name: booking_app
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/postgres
+
 
   celery:
-      build:
-        context: .
-      container_name: booking_celery
-      command: [ "/booking_service/docker/docker-bootstrap.sh", "celery" ]
-      depends_on:
-        - redis
+    env_file: .env
+    build:
+      context: .
+    container_name: booking_celery
+    command: ["/booking_service/docker/docker-bootstrap.sh", "celery"]
+    depends_on:
+      - redis
 
   flower:
-      build:
-        context: .
-      container_name: booking_flower
-      command: [ "/booking_service/docker/docker-bootstrap.sh", "flower" ]
-      depends_on:
-        - redis
+    env_file: .env
+    build:
+      context: .
+    container_name: booking_flower
+    command: ["/booking_service/docker/docker-bootstrap.sh", "flower"]
+    depends_on:
+      - redis
 
 volumes:
   postgres_data:
-      external: false
+    external: false
   redis_data:
-      external: false
+    external: false
+
+#version: "3.9"
+#services:
+#  main_db:
+#    image: postgres:13.3
+#    environment:
+#      POSTGRES_DB: "postgres"
+#      POSTGRES_USER: "postgres"
+#      POSTGRES_PASSWORD: "postgres"
+#    ports:
+#      - "7777:5432"
+#    volumes:
+#      - "postgres_data:/var/lib/postgresql/data"
+#
+#  redis:
+#    image: redis:7
+#    container_name: booking_redis1
+#    restart: unless-stopped
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis_data:/data
+#
+#  booking:
+#      build:
+#        context: .
+#      command: bash -c "alembic upgrade head && uvicorn app.main:app —host 0.0.0.0 —port 8000"
+#      container_name: booking_app
+#      ports:
+#        - "8000:8000"
+#      depends_on:
+#        - main_db
+#
+#  celery:
+#      build:
+#        context: .
+#      container_name: booking_celery
+#      command: [ "/booking_service/docker/docker-bootstrap.sh", "celery" ]
+#      depends_on:
+#        - redis
+#
+#  flower:
+#      build:
+#        context: .
+#      container_name: booking_flower
+#      command: [ "/booking_service/docker/docker-bootstrap.sh", "flower" ]
+#      depends_on:
+#        - redis
+#
+#volumes:
+#  postgres_data:
+#      external: false
+#  redis_data:
+#      external: false
 
 #  celery_worker:
 #    build:
