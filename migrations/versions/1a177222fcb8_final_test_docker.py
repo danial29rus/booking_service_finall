@@ -1,8 +1,8 @@
-"""new database5
+"""final_test_docker
 
-Revision ID: 2a6f44656431
-Revises: 1f705f881564
-Create Date: 2023-02-21 11:51:15.309656
+Revision ID: 1a177222fcb8
+Revises: 
+Create Date: 2023-02-25 19:39:24.956269
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2a6f44656431'
-down_revision = '1f705f881564'
+revision = '1a177222fcb8'
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -52,8 +52,8 @@ def upgrade() -> None:
     sa.Column('date_from', sa.Date(), nullable=False),
     sa.Column('date_to', sa.Date(), nullable=False),
     sa.Column('price', sa.Integer(), nullable=False),
-    sa.Column('total_cost', sa.Integer(), sa.Computed('(date_to - date_from) * price', ), nullable=True),
-    sa.Column('total_days', sa.Integer(), sa.Computed('date_to - date_from', ), nullable=True),
+    sa.Column('total_cost', sa.Integer(), nullable=False),
+    sa.Column('total_days', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['room_id'], ['rooms.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
