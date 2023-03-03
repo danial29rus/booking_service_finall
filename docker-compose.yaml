@@ -23,10 +23,10 @@ services:
       - redis_data:/data
 
   booking:
-    env_file: .env
+    env_file: .env-non-dev
     build:
       context: .
-    command: bash -c "alembic upgrade fe06c327c5a1 && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     container_name: booking_app
     ports:
       - 8000:8000
@@ -37,7 +37,7 @@ services:
 
 
   celery:
-    env_file: .env
+    env_file: .env-non-dev
     build:
       context: .
     container_name: booking_celery
@@ -46,7 +46,7 @@ services:
       - redis
 
   flower:
-    env_file: .env
+    env_file: .env-non-dev
     build:
       context: .
     container_name: booking_flower
